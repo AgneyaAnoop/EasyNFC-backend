@@ -3,10 +3,14 @@ const express = require('express');
 const connectDB = require('./config/database');
 const authRoutes = require('./routes/auth');
 const profileRoutes = require('./routes/profile');
+const cors = require('cors');
 
 const app = express();
 
+app.use(cors());
+
 connectDB();
+
 
 app.use(express.json());
 app.use('/api/auth', authRoutes);
