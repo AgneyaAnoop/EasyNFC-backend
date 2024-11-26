@@ -7,7 +7,19 @@ const cors = require('cors');
 
 const app = express();
 
-app.use(cors());
+const corsOptions = {
+  origin: '*',                    // Allow all origins
+  methods: '*',                   // Allow all methods
+  allowedHeaders: '*',            // Allow all headers
+  credentials: true,              // Enable credentials
+  optionsSuccessStatus: 200       // Some legacy browsers choke on 204
+};
+
+// Apply CORS middleware
+app.use(cors(corsOptions));
+
+// Handle pre-flight requests
+app.options('*', cors(corsOptions));
 
 connectDB();
 
