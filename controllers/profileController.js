@@ -31,37 +31,6 @@ exports.createProfile = async (req, res) => {
   }
 };
 
-exports.updateProfile = async (req, res) => {
-  try {
-    const user = await User.findById(req.userId);
-    const profileIndex = user.activeProfile;
-
-    if (profileIndex >= user.profiles.length) {
-      return res.status(404).json({ message: 'Profile not found' });
-    }
-
-    const { name, phoneNo, about, links } = req.body;
-    
-    if (name && name !== user.profiles[profileIndex].name) {
-      const urlSlug = await generateUniqueSlug(name);
-      user.profiles[profileIndex].urlSlug = urlSlug;
-    }
-
-    user.profiles[profileIndex].name = name || user.profiles[profileIndex].name;
-    user.profiles[profileIndex].phoneNo = phoneNo || user.profiles[profileIndex].phoneNo;
-    user.profiles[profileIndex].about = about || user.profiles[profileIndex].about;
-    user.profiles[profileIndex].links = links || user.profiles[profileIndex].links;
-
-    await user.save();
-
-    res.json({
-      message: 'Profile updated successfully',
-      profileUrl: `${process.env.BASE_URL}/${user.profiles[profileIndex].urlSlug}`
-    });
-  } catch (error) {
-    res.status(500).json({ message: 'Error updating profile', error: error.message });
-  }
-};
 
 exports.switchProfile = async (req, res) => {
   try {
@@ -226,5 +195,51 @@ exports.getAllProfiles = async (req, res) => {
       });
     } catch (error) {
       res.status(500).json({ message: 'Error fetching public profiles', error: error.message });
+    }
+  };
+
+  exports.updateProfile = async (req, res) => {
+    try {
+      const { profileId } = req.params;
+      const user = await User.findById(req.userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+  
+      // Find the profile by ID
+      const profileIndex = user.profiles.findIndex(
+        profile => profile._id.toString() === profileId
+      );
+  
+      if (profileIndex === -1) {
+        return res.status(404).json({ message: 'Profile not found' });
+      }
+  
+      const { name, phoneNo, about, links } = req.body;
+      
+      // Generate new slug if name changed
+      if (name && name !== user.profiles[profileIndex].name) {
+        const urlSlug = await generateUniqueSlug(name);
+        user.profiles[profileIndex].urlSlug = urlSlug;
+      }
+  
+      // Update profile fields
+      user.profiles[profileIndex] = {
+        ...user.profiles[profileIndex].toObject(),
+        name: name || user.profiles[profileIndex].name,
+        phoneNo: phoneNo || user.profiles[profileIndex].phoneNo,
+        about: about || user.profiles[profileIndex].about,
+        links: links || user.profiles[profileIndex].links
+      };
+  
+      await user.save();
+  
+      res.json({
+        message: 'Profile updated successfully',
+        profileUrl: `${process.env.BASE_URL}/${user.profiles[profileIndex].urlSlug}`
+      });
+    } catch (error) {
+      res.status(500).json({ message: 'Error updating profile', error: error.message });
     }
   };
